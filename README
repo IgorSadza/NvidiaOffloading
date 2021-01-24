@@ -1,0 +1,85 @@
+# NvidiaOffloading
+# ---------------
+Use Intel iGPU and NVIDIA graphics card simultaneously for all your displays.
+
+# Install packages
+# ---------------
+sudo apt-get install xorg x11-xserver-utils software-properties-common 
+sudo apt-get update
+
+# Install nvidia drivers
+# ---------------
+sudo apt-add-repository "deb http://deb.debian.org/debian buster-backports main contrib non-free"
+sudo apt-get update
+sudo apt install -t buster-backports nvidia-driver firmware-misc-nonfree
+
+*Legacy
+sudo apt-get install nvidia-detect
+nvidia_driver=($(nvidia-detect | grep nvidia-))
+sudo apt-get install $nvidia_driver
+
+# Create simple XORG configuration file
+# ---------------
+sudo vi /etc/X11/xorg.conf
+
+# COPY SECTION ---------------
+
+Section "ServerLayout"
+    Identifier "layout"
+    Screen 0 "nouveau"
+    Inactive "intel"
+EndSection
+
+Section "Device"
+    Identifier  "nouveau"
+    Driver      "nvidia"
+    BusID       "PCI:1:0:0" # see man lspci
+EndSection
+
+Section "Screen"
+    Identifier "nouveau"
+    Device "nouveau"
+EndSection
+
+Section "Device"
+    Identifier  "intel"
+    Driver      "modesetting"
+EndSection
+
+Section "Screen"
+    Identifier "intel"
+    Device "intel"
+EndSection
+
+# COPY SECTION ---------------
+
+sudo reboot now
+
+# Finaly use xrand to combine sources
+# ---------------
+xrandr --setprovideroutputsource modesetting NVIDIA-0 
+xrandr --auto
+
+# Check your displays
+# ---------------
+xrandr -q | grep -w "connected"
+
+*Sample Output
+DVI-I-1 connected 2560x1080+2560+0 (normal left inverted right x axis y axis) 673mm x 284mm
+HDMI-0 connected 2560x1080+5120+0 (normal left inverted right x axis y axis) 673mm x 284mm
+HDMI-1-1 connected 2560x1080+0+0 (normal left inverted right x axis y axis) 673mm x 284mm
+
+# Final configuration for 3 screens.
+# ---------------
+xrandr --output DVI-I-1 --mode 2560x1080 --pos 2560x0 --rotate normal --output HDMI-0 --mode 2560x1080 --pos 5120x0 --output HDMI-1-1 --mode 2560x1080 --pos 0x0
+
+# You need to execute this 3 scripts evry time after boot.
+# ---------------
+xrandr --setprovideroutputsource modesetting NVIDIA-0 
+xrandr --auto
+xrandr --output DVI-I-1 --mode 2560x1080 --pos 2560x0 --rotate normal --output HDMI-0 --mode 2560x1080 --pos 5120x0 --output HDMI-1-1 --mode 2560x1080 --pos 0x0
+
+#REF:
+https://wiki.debian.org/NvidiaGraphicsDrivers
+https://askubuntu.com/questions/593938/how-to-run-both-intel-and-nvidia-graphics-card-driver-on-dual-monitor-setup
+http://us.download.nvidia.com/XFree86/Linux-x86/319.12/README/randr14.html
